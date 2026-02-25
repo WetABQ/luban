@@ -4,6 +4,7 @@ import type {
   AgentRunConfigSnapshot,
   AgentRunnerKind,
   AmpConfigEntrySnapshot,
+  BrowseDirEntry,
   ClaudeConfigEntrySnapshot,
   DroidConfigEntrySnapshot,
   AppearanceFontsSnapshot,
@@ -35,6 +36,7 @@ import { AGENT_MODELS, DROID_MODELS } from "./agent-settings"
 
 export type LubanActions = {
   pickProjectPath: () => Promise<string | null>
+  browseDir: (path: string) => Promise<{ path: string; entries: BrowseDirEntry[] }>
   addProject: (path: string) => void
   addProjectAndOpen: (path: string) => Promise<{ projectId: ProjectId; workdirId: WorkspaceId }>
   deleteProject: (projectId: ProjectId) => void
@@ -182,6 +184,10 @@ export function createLubanActions(args: {
 
   function pickProjectPath(): Promise<string | null> {
     return args.request<string | null>({ type: "pick_project_path" })
+  }
+
+  function browseDir(path: string): Promise<{ path: string; entries: BrowseDirEntry[] }> {
+    return args.request<{ path: string; entries: BrowseDirEntry[] }>({ type: "browse_dir", path })
   }
 
   function createWorkdir(projectId: ProjectId) {
@@ -929,6 +935,7 @@ export function createLubanActions(args: {
 
   return {
     pickProjectPath,
+    browseDir,
     addProject,
     addProjectAndOpen,
     deleteProject,

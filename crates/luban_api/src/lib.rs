@@ -908,6 +908,9 @@ pub enum WsServerMessage {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientAction {
     PickProjectPath,
+    BrowseDir {
+        path: String,
+    },
     AddProject {
         path: String,
     },
@@ -1262,6 +1265,12 @@ pub enum ClientAction {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BrowseDirEntry {
+    pub path: String,
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerEvent {
     AppChanged {
@@ -1303,6 +1312,11 @@ pub enum ServerEvent {
     ProjectPathPicked {
         request_id: String,
         path: Option<String>,
+    },
+    BrowseDirReady {
+        request_id: String,
+        path: String,
+        entries: Vec<BrowseDirEntry>,
     },
     AddProjectAndOpenReady {
         request_id: String,

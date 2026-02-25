@@ -439,8 +439,11 @@ export type AgentEvent =
   | { type: "turn_canceled" }
   | { type: "turn_error"; message: string }
 
+export type BrowseDirEntry = { path: string; name: string }
+
 export type ClientAction =
   | { type: "pick_project_path" }
+  | { type: "browse_dir"; path: string }
   | { type: "add_project"; path: string }
   | { type: "add_project_and_open"; path: string }
   | {
@@ -582,6 +585,7 @@ export type ServerEvent =
   | { type: "task_document_changed"; workdir_id: WorkspaceId; task_id: WorkspaceThreadId; kind: TaskDocumentKind }
   | { type: "toast"; message: string }
   | { type: "project_path_picked"; request_id: string; path: string | null }
+  | { type: "browse_dir_ready"; request_id: string; path: string; entries: BrowseDirEntry[] }
   | { type: "add_project_and_open_ready"; request_id: string; project_id: ProjectId; workdir_id: WorkspaceId }
   | { type: "task_executed"; request_id: string; result: TaskExecuteResult }
   | { type: "feedback_submitted"; request_id: string; result: FeedbackSubmitResult }

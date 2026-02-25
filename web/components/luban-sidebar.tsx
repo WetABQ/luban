@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLuban } from "@/lib/luban-context"
+import { FolderPickerDialog } from "@/components/folder-picker-dialog"
 import { buildSidebarProjects } from "@/lib/sidebar-view-model"
 import { projectColorClass } from "@/lib/project-colors"
 import { fetchTasks } from "@/lib/luban-http"
@@ -182,10 +183,11 @@ export function LubanSidebar({
 }: LubanSidebarProps) {
   const {
     app,
-    pickProjectPath,
     addProject,
+    browseDir,
   } = useLuban()
 
+  const [folderPickerOpen, setFolderPickerOpen] = useState(false)
   const [favoriteTasks, setFavoriteTasks] = useState<TaskSummarySnapshot[]>([])
 
   const projects = useMemo(
@@ -234,9 +236,11 @@ export function LubanSidebar({
 
   const normalizePathLike = (raw: string) => raw.trim().replace(/\/+$/, "")
 
-  const handleAddProject = async () => {
-    const path = await pickProjectPath()
-    if (!path) return
+  const handleAddProject = () => {
+    setFolderPickerOpen(true)
+  }
+
+  const handleFolderSelected = (path: string) => {
     addProject(path)
     onProjectSelected?.(normalizePathLike(path))
     onViewChange?.("tasks")
@@ -379,6 +383,12 @@ export function LubanSidebar({
           </button>
         </Section>
       </div>
+      <FolderPickerDialog
+        open={folderPickerOpen}
+        onOpenChange={setFolderPickerOpen}
+        onSelect={handleFolderSelected}
+        browseDir={browseDir}
+      />
     </div>
   )
 }

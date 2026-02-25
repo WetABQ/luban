@@ -13,6 +13,7 @@ import type {
   AttachmentRef,
   AgentRunnerKind,
   AgentRunConfigSnapshot,
+  BrowseDirEntry,
   ClaudeConfigEntrySnapshot,
   CodexConfigEntrySnapshot,
   DroidConfigEntrySnapshot,
@@ -61,6 +62,7 @@ type LubanContextValue = {
   subscribeServerEvents: (handler: (event: ServerEvent) => void) => () => void
 
   pickProjectPath: () => Promise<string | null>
+  browseDir: (path: string) => Promise<{ path: string; entries: BrowseDirEntry[] }>
   addProject: (path: string) => void
   addProjectAndOpen: (path: string) => Promise<{ projectId: ProjectId; workdirId: WorkspaceId }>
   deleteProject: (projectId: ProjectId) => void
@@ -404,6 +406,7 @@ export function LubanProvider({ children }: { children: React.ReactNode }) {
     wsConnected,
     subscribeServerEvents,
     pickProjectPath: actions.pickProjectPath,
+    browseDir: actions.browseDir,
     addProject: actions.addProject,
     addProjectAndOpen: actions.addProjectAndOpen,
     deleteProject: actions.deleteProject,

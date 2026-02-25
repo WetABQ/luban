@@ -190,6 +190,7 @@ export function useLubanTransport(args: {
           const event = msg.event
 
           if (
+            event.type === "browse_dir_ready" ||
             event.type === "project_path_picked" ||
             event.type === "add_project_and_open_ready" ||
             event.type === "task_executed" ||
@@ -219,6 +220,8 @@ export function useLubanTransport(args: {
             const pending = pendingResponsesRef.current.get(event.request_id)
             if (pending) {
               pendingResponsesRef.current.delete(event.request_id)
+              if (event.type === "browse_dir_ready")
+                pending.resolve({ path: event.path, entries: event.entries })
               if (event.type === "project_path_picked") pending.resolve(event.path)
               if (event.type === "add_project_and_open_ready")
                 pending.resolve({ projectId: event.project_id, workdirId: event.workdir_id })

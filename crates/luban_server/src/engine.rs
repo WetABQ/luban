@@ -1185,6 +1185,34 @@ impl Engine {
                     return;
                 }
 
+                if let luban_api::ClientAction::BrowseDir { path } = &action {
+                    let events = self.events.clone();
+                    let rev = self.rev;
+                    let raw_path = path.clone();
+                    tokio::task::spawn_blocking(move || {
+                        match browse_dir(&raw_path) {
+                            Ok((resolved, entries)) => {
+                                let _ = events.send(WsServerMessage::Event {
+                                    rev,
+                                    event: Box::new(luban_api::ServerEvent::BrowseDirReady {
+                                        request_id,
+                                        path: resolved,
+                                        entries,
+                                    }),
+                                });
+                            }
+                            Err(msg) => {
+                                let _ = events.send(WsServerMessage::Error {
+                                    request_id: Some(request_id),
+                                    message: msg,
+                                });
+                            }
+                        }
+                    });
+                    let _ = reply.send(Ok(self.rev));
+                    return;
+                }
+
                 if let luban_api::ClientAction::AddProject { path } = &action {
                     enum AddProjectDecision {
                         ReuseExisting,
@@ -5250,6 +5278,56 @@ fn map_system_task_kind(kind: luban_domain::SystemTaskKind) -> luban_api::System
     }
 }
 
+fn browse_dir(raw_path: &str) -> Result<(String, Vec<luban_api::BrowseDirEntry>), String> {
+    let base = if raw_path.is_empty() {
+        std::env::var("HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("/"))
+    } else {
+        expand_user_path(raw_path)
+    };
+
+    let resolved = base
+        .canonicalize()
+        .map_err(|e| format!("Cannot resolve path: {e}"))?;
+
+    let read_dir = std::fs::read_dir(&resolved)
+        .map_err(|e| format!("Cannot read directory: {e}"))?;
+
+    let mut entries: Vec<luban_api::BrowseDirEntry> = Vec::new();
+    for entry in read_dir.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with('.') {
+            continue;
+        }
+        let ft = match entry.file_type() {
+            Ok(ft) => ft,
+            Err(_) => continue,
+        };
+        if !ft.is_dir() && !ft.is_symlink() {
+            continue;
+        }
+        if ft.is_symlink() {
+            // Only include symlinks that point to directories.
+            if let Ok(meta) = entry.path().metadata() {
+                if !meta.is_dir() {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+        entries.push(luban_api::BrowseDirEntry {
+            path: entry.path().to_string_lossy().to_string(),
+            name,
+        });
+    }
+
+    entries.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+
+    Ok((resolved.to_string_lossy().to_string(), entries))
+}
+
 fn pick_project_folder() -> Option<PathBuf> {
     #[cfg(target_os = "macos")]
     {
@@ -6583,7 +6661,8 @@ fn map_client_action(action: luban_api::ClientAction) -> Option<Action> {
         | luban_api::ClientAction::DroidConfigTree
         | luban_api::ClientAction::DroidConfigListDir { .. }
         | luban_api::ClientAction::DroidConfigReadFile { .. }
-        | luban_api::ClientAction::DroidConfigWriteFile { .. } => None,
+        | luban_api::ClientAction::DroidConfigWriteFile { .. }
+        | luban_api::ClientAction::BrowseDir { .. } => None,
     }
 }
 
