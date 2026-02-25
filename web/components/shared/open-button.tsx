@@ -2,7 +2,7 @@
 
 import type { ComponentType } from "react"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Check, ChevronDown, Copy, FolderOpen } from "lucide-react"
 import Image from "next/image"
 
@@ -103,6 +103,7 @@ export function OpenButton() {
   const [selection, setSelection] = useState<SelectedItem>(getDefaultSelection)
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fromApp = parseSelection(app?.ui?.open_button_selection ?? null)
@@ -142,8 +143,14 @@ export function OpenButton() {
     void executeAction(item)
   }
 
+  const menuStyle = useMemo(() => {
+    if (!open || !containerRef.current) return undefined
+    const rect = containerRef.current.getBoundingClientRect()
+    return { top: rect.bottom + 4, right: window.innerWidth - rect.right }
+  }, [open])
+
   return (
-    <div className="relative inline-flex">
+    <div ref={containerRef} className="relative inline-flex">
       <button
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => void executeAction(selection)}
@@ -184,7 +191,7 @@ export function OpenButton() {
       {open && !disabled && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-50 w-44 bg-popover border border-border rounded-lg shadow-xl overflow-hidden">
+          <div className="fixed z-50 w-44 bg-popover border border-border rounded-lg shadow-xl overflow-hidden" style={menuStyle}>
             <div className="p-1">
               {editors.map((editor) => (
                 <button
